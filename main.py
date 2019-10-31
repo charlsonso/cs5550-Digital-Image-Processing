@@ -4,7 +4,7 @@ import numpy as np
 import math
 import cv2
 import skimage
-
+from filter import amf, gmf, hmf, chmf, maxf, minf, midf, atmf
 np.set_printoptions(threshold=sys.maxsize)
 
 class App(QtWidgets.QMainWindow):
@@ -87,19 +87,92 @@ class App(QtWidgets.QMainWindow):
         histogram_eq = QtWidgets.QAction("Histogram Equalization", self)
         bit_plane = QtWidgets.QAction("Bit Plane Slicing", self)
         filter_option = QtWidgets.QAction("Filter", self)
+        spatial_filter = QtWidgets.QAction("Spatial Filters", self)
 
         zoomEdit.triggered.connect(self.zoom_dbox)
         gray_scale_resEdit.triggered.connect(self.gray_scale_res_dbox)
         histogram_eq.triggered.connect(self.histogram_dbox)
         filter_option.triggered.connect(self.filter_dbox)
         bit_plane.triggered.connect(self.bit_plane_dbox)
+        spatial_filter.triggered.connect(self.spatial_filter_dbox)
+
 
         editMenu.addAction(zoomEdit)
         editMenu.addAction(gray_scale_resEdit)
         editMenu.addAction(histogram_eq)
         editMenu.addAction(filter_option)
         editMenu.addAction(bit_plane)
-    
+        editMenu.addAction(spatial_filter)
+
+    def spatial_filter_dbox(self):
+        dbox = self.create_dbox('Spatial Filter Options')
+        layout_dbox = QtWidgets.QVBoxLayout()
+        label = QtWidgets.QLabel('Kernel size(n)')
+        self.kernel = QtWidgets.QLineEdit()
+        amfilter = QtWidgets.QRadioButton('Arithmetic Mean Filter')
+        amfilter.option = 1
+        amfilter.toggled.connect(self.change_filter_option)
+        gfilter = QtWidgets.QRadioButton('Geometric Mean Filter')
+        gfilter.option = 2
+        gfilter.toggled.connect(self.change_filter_option)
+        hmfilter = QtWidgets.QRadioButton('Harmonic Mean Filter')
+        hmfilter.option = 3
+        hmfilter.toggled.connect(self.change_filter_option)
+        cfilter = QtWidgets.QRadioButton('Contraharmonic Mean Filter')
+        cfilter.option = 4
+        cfilter.toggled.connect(self.change_filter_option)
+        maxfilter = QtWidgets.QRadioButton('Max Filter')
+        maxfilter.option = 5
+        maxfilter.toggled.connect(self.change_filter_option)
+        minfilter = QtWidgets.QRadioButton('Min Filter')
+        minfilter.option = 6
+        minfilter.toggled.connect(self.change_filter_option)
+        midfilter = QtWidgets.QRadioButton('Mid point Filter')
+        midfilter.option = 7
+        midfilter.toggled.connect(self.change_filter_option)
+        atmfilter = QtWidgets.QRadioButton('Alpha-trimmed mean filter')
+        atmfilter.option = 8
+
+        button = QtWidgets.QPushButton("OK")
+        button.clicked.connect(self.apply_spatial_filter)
+        layout_dbox.addWidget(label)
+        layout_dbox.addWidget(self.kernel)
+        layout_dbox.addWidget(amfilter)
+        layout_dbox.addWidget(gfilter)
+        layout_dbox.addWidget(hmfilter)
+        layout_dbox.addWidget(cfilter)
+        layout_dbox.addWidget(maxfilter)
+        layout_dbox.addWidget(minfilter)
+        layout_dbox.addWidget(midfilter)
+        layout_dbox.addWidget(atmfilter)
+        layout_dbox.addWidget(button)
+
+
+        dbox.setLayout(layout_dbox)
+        dbox.exec_()
+
+    def apply_spatial_filter(self):
+        kernel_size = int(self.kernel.text())
+        kernel_dim = (kernel_size, kernel_size)
+        if self.filter_option == 1:
+            self.modified_image = amf(self.original_image, kernel_dim)
+        elif self.filter_option == 2:
+            self.modified_image = gmf(self.original_image, kernel_dim)
+        elif self.filter_option == 3:
+            self.modified_image = hmf(self.original_image, kernel_dim)
+        elif self.filter_option == 4:
+            self.modified_image = chmf(self.original_image, kernel_dim)
+        elif self.filter_option == 5:
+            self.modified_image = maxf(self.original_image, kernel_dim)
+        elif self.filter_option == 6:
+            self.modified_image = minf(self.original_image, kernel_dim)
+        elif self.filter_option == 7:
+            self.modified_image = midf(self.original_image, kernel_dim)
+        elif self.filter_option == 8:
+            self.modified_image = atmf(self.original_image, kernel_dim)
+
+        self.set_modified_image()
+
     def filter_dbox(self):
         dbox = self.create_dbox('Filter Options')
         layout_dbox = QtWidgets.QVBoxLayout()
