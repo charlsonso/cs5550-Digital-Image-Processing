@@ -4,7 +4,9 @@ import numpy as np
 import math
 import cv2
 import skimage
+import os
 from filter import amf, gmf, hmf, chmf, maxf, minf, midf, atmf
+from encoding import run_length_encoding_gray, run_length_encoding_bit_plane, huffman_encoding
 np.set_printoptions(threshold=sys.maxsize)
 
 class App(QtWidgets.QMainWindow):
@@ -88,6 +90,7 @@ class App(QtWidgets.QMainWindow):
         bit_plane = QtWidgets.QAction("Bit Plane Slicing", self)
         filter_option = QtWidgets.QAction("Filter", self)
         spatial_filter = QtWidgets.QAction("Spatial Filters", self)
+        encoding = QtWidgets.QAction("Encoding", self)
 
         zoomEdit.triggered.connect(self.zoom_dbox)
         gray_scale_resEdit.triggered.connect(self.gray_scale_res_dbox)
@@ -95,7 +98,7 @@ class App(QtWidgets.QMainWindow):
         filter_option.triggered.connect(self.filter_dbox)
         bit_plane.triggered.connect(self.bit_plane_dbox)
         spatial_filter.triggered.connect(self.spatial_filter_dbox)
-
+        encoding.triggered.connect(self.encoding_dbox)
 
         editMenu.addAction(zoomEdit)
         editMenu.addAction(gray_scale_resEdit)
@@ -103,6 +106,70 @@ class App(QtWidgets.QMainWindow):
         editMenu.addAction(filter_option)
         editMenu.addAction(bit_plane)
         editMenu.addAction(spatial_filter)
+        editMenu.addAction(encoding)
+
+    def encoding_dbox(self):
+        dbox = self.create_dbox('Encoding Options')
+        dbox.setGeometry(100, 100, 1080, 720)
+        layout_dbox = QtWidgets.QVBoxLayout()
+        rle_gray = QtWidgets.QRadioButton('Run Length Encoding Grayscale')
+        rle_gray.option = 1
+        rle_gray.toggled.connect(self.change_encode_option)
+        rle_bit_plane = QtWidgets.QRadioButton('Run Length Encoding Bit Plane')
+        rle_bit_plane.option = 2
+        rle_bit_plane.toggled.connect(self.change_encode_option)
+        he = QtWidgets.QRadioButton('Huffman Encoding')
+        he.option = 3
+        he.toggled.connect(self.change_encode_option)
+        self.encode_ratio = QtWidgets.QLabel('')
+        self.encode_time = QtWidgets.QLabel('')
+        self.encode_txt = QtWidgets.QLabel('')
+        button = QtWidgets.QPushButton("OK")
+        button.clicked.connect(self.apply_encoding)
+        layout_dbox.addWidget(rle_gray)
+        layout_dbox.addWidget(rle_bit_plane)
+        layout_dbox.addWidget(he)
+        layout_dbox.addWidget(self.encode_ratio)
+        layout_dbox.addWidget(self.encode_time)
+        layout_dbox.addWidget(self.encode_txt)
+        layout_dbox.addWidget(button)
+        dbox.setLayout(layout_dbox)
+        dbox.exec_()
+
+    def change_encode_option(self):
+        button = self.sender()
+        option = button.option
+        if option != 0:
+            self.encode_option = option
+
+    def apply_encoding(self):
+        if self.encode_option == 1:
+            data = run_length_encoding_gray(self.original_image)
+            self.encode_time.setText("Processing Time: " + str(data[2]) + " sec")
+            self.encode_ratio.setText("Ratio: " + str(data[1]))
+            f = open("run_length_encoding_gray.txt", "x")
+            f.write(str(data[0]))
+            f.close()
+            self.encode_txt.setText("Encoded Text Saved at " + os.getcwd())
+        elif self.encode_option == 2:
+            data = run_length_encoding_bit_plane(self.original_image)
+            self.encode_time.setText("Processing Time: " + str(data[2]) + " sec")
+            self.encode_ratio.setText("Ratio: " + str(data[1]))
+            f = open("run_length_encoding_bit_plane.txt", "x")
+            f.write(str(data[0]))
+            f.close()
+            self.encode_txt.setText("Encoded Text Saved at " + os.getcwd())
+        elif self.encode_option == 3:
+            data = huffman_encoding(self.original_image)
+            self.encode_time.setText("Processing Time: " + str(data[3]) + "sec")
+            self.encode_ratio.setText("Ratio: " + str(data[2]))
+            f = open("huffman_encoding.txt", "x")
+            f.write(str(data[0]))
+            f.close()
+            f = open("huffman_encoding_table.txt", "x")
+            f.write(str(data[1]))
+            f.close()
+            self.encode_txt.setText("Encoded data and table Saved at " + os.getcwd())
 
     def spatial_filter_dbox(self):
         dbox = self.create_dbox('Spatial Filter Options')
@@ -150,6 +217,7 @@ class App(QtWidgets.QMainWindow):
 
         dbox.setLayout(layout_dbox)
         dbox.exec_()
+
 
     def apply_spatial_filter(self):
         kernel_size = int(self.kernel.text())
